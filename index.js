@@ -104,10 +104,24 @@ function navigateMap(mapArray) {
 
 function processMap(map) {
     try {
+        // Check for exactly one start and one end
+        const startCount = map.reduce((acc, row) => acc + (row.match(/@/g) || []).length, 0);
+        const endCount = map.reduce((acc, row) => acc + (row.match(/x/g) || []).length, 0);
+
+        if (startCount !== 1 || endCount !== 1) {
+            throw new Error("Invalid map configuration.");
+        }
+
         const { letters, path } = navigateMap(map);
+
+        // Verify the path ended at 'x'
+        if (!path.endsWith('x')) {
+            throw new Error("Path does not end at the destination.");
+        }
+
         console.log(`Letters: ${letters}, Path: ${path}`);
     } catch (error) {
-        console.error(`Error: ${error.message}`);
+        console.log("Error");
     }
 }
 
@@ -122,12 +136,9 @@ const map1 = [
     "      |   |",
     "      +---+"
 ];
-try {
-    const result = navigateMap(map1);
-    console.log(`Letters: ${result.letters}, Path: ${result.path}`);
-} catch (error) {
-    console.error(`Error: ${error.message}`);
-}
+
+processMap(map1);
+
 // Map 2: Go straight through intersections
 const map2 = [
     "  @          ",
@@ -138,12 +149,10 @@ const map2 = [
     "    |      | ",
     "    +---D--+ "
 ];
-try {
-    const result = navigateMap(map2);
-    console.log(`Letters: ${result.letters}, Path: ${result.path}`);
-} catch (error) {
-    console.error(`Error: ${error.message}`);
-}
+
+processMap(map2);
+
+
 // Map 3: Letters may be found on turns
 const map3 = [
     "  @---A---+",
@@ -152,12 +161,10 @@ const map3 = [
     "      |   |",
     "      +---C"
 ];
-try {
-    const result = navigateMap(map3);
-    console.log(`Letters: ${result.letters}, Path: ${result.path}`);
-} catch (error) {
-    console.error(`Error: ${error.message}`);
-}
+
+processMap(map3);
+
+
 // Map 4: Do not collect a letter from the same location twice
 const map4 = [
     "     +-O-N-+",
@@ -169,12 +176,10 @@ const map4 = [
     "             |",
     "             x"
 ];
-try {
-    const result = navigateMap(map4);
-    console.log(`Letters: ${result.letters}, Path: ${result.path}`);
-} catch (error) {
-    console.error(`Error: ${error.message}`);
-}
+
+processMap(map4);
+
+
 // Map 5: Keep direction, even in a compact space
 const map5 = [
     " +-L-+",
@@ -182,127 +187,93 @@ const map5 = [
     "@B+ ++ H",
     " ++    x"
 ];
-try {
-    const result = navigateMap(map5);
-    console.log(`Letters: ${result.letters}, Path: ${result.path}`);
-} catch (error) {
-    console.error(`Error: ${error.message}`);
-}
+
+processMap(map5);
+
 // Map 6: Ignore stuff after end of path
 const map6 = [
     "  @-A--+", 
     "       |",
     "       +-B--x-C--D"
 ];
-try {
-    const result = navigateMap(map6);
-    console.log(`Letters: ${result.letters}, Path: ${result.path}`);
-} catch (error) {
-    console.error(`Error: ${error.message}`);
-}
 
-// // Invalid Map: Missing start character
-// const invalidMap1 = [
-//     "     -A---+",
-//     "          |",
-//     "  x-B-+   C",
-//     "      |   |",
-//     "      +---+"
-// ];
+processMap(map6);
 
-// try {
-//     navigateMap(invalidMap1);
-// } catch (error) {
-//     console.log("Invalid Map 1 - Missing start character:", error.message);
-// }
+// Invalid Map: Missing start character
+const invalidMap1 = [
+    "     -A---+",
+    "          |",
+    "  x-B-+   C",
+    "      |   |",
+    "      +---+"
+];
 
-// // Invalid Map: Missing end character
-// const invalidMap2 = [
-//     "   @--A---+",
-//     "          |",
-//     "    B-+   C",
-//     "      |   |",
-//     "      +---+"
-// ];
+processMap(invalidMap1);
 
-// try {
-//     navigateMap(invalidMap2);
-// } catch (error) {
-//     console.log("Invalid Map 2 - Missing end character:", error.message);
-// }
+// Invalid Map: Missing end character
+const invalidMap2 = [
+    "   @--A---+",
+    "          |",
+    "    B-+   C",
+    "      |   |",
+    "      +---+"
+];
 
-// // Invalid Map: Multiple starts
-// const invalidMap3 = [
-//     "   @--A-@-+",
-//     "          |",
-//     "  x-B-+   C",
-//     "      |   |",
-//     "      +---+",
-//     "   @--A---+",
-//     "          |",
-//     "          C",
-//     "          x",
-//     "      @-B-+",
-//     "   @--A--x",
-//     "  x-B-+",
-//     "      |",
-//     "      @"
-// ];
+processMap(invalidMap2);
 
-// try {
-//     navigateMap(invalidMap3);
-// } catch (error) {
-//     console.log("Invalid Map 3 - Multiple starts:", error.message);
-// }
+// Invalid Map: Multiple starts
+const invalidMap3 = [
+    "   @--A-@-+",
+    "          |",
+    "  x-B-+   C",
+    "      |   |",
+    "      +---+",
+    "   @--A---+",
+    "          |",
+    "          C",
+    "          x",
+    "      @-B-+",
+    "   @--A--x",
+    "  x-B-+",
+    "      |",
+    "      @"
+];
 
-// // Invalid Map: Fork in path
-// const invalidMap4 = [
-//     "        x-B",
-//     "          |",
-//     "   @--A---+",
-//     "          |",
-//     "     x+   C",
-//     "      |   |",
-//     "      +---+"
-// ];
+processMap(invalidMap3);
 
-// try {
-//     navigateMap(invalidMap4);
-// } catch (error) {
-//     console.log("Invalid Map 4 - Fork in path:", error.message);
-// }
+// Invalid Map: Fork in path
+const invalidMap4 = [
+    "        x-B",
+    "          |",
+    "   @--A---+",
+    "          |",
+    "     x+   C",
+    "      |   |",
+    "      +---+"
+];
 
-// // Invalid Map: Broken path
-// const invalidMap5 = [
-//     "   @--A-+",
-//     "        |",
-//     "        B-x"
-// ];
+processMap(invalidMap4);
 
-// try {
-//     navigateMap(invalidMap5);
-// } catch (error) {
-//     console.log("Invalid Map 5 - Broken path:", error.message);
-// }
+// Invalid Map: Broken path
+const invalidMap5 = [
+    "   @--A-+",
+    "        |",
+    "         ",
+    "        B-x"
+];
 
-// // Invalid Map: Multiple starting paths
-// const invalidMap6 = [
-//     "  x-B-@-A-x"
-// ];
+processMap(invalidMap5);
 
-// try {
-//     navigateMap(invalidMap6);
-// } catch (error) {
-//     console.log("Invalid Map 6 - Multiple starting paths:", error.message);
-// }
+// Invalid Map: Multiple starting paths
+const invalidMap6 = [
+    "  x-B-@-A-x"
+];
 
-// // Invalid Map: Fake turn
-// const invalidMap7 = [
-//     "  @-A-+-B-x"
-// ];
+processMap(invalidMap6);
 
-// try {
-//     navigateMap(invalidMap7);
-// } catch (error) {
-//     console.log("Invalid Map 7 - Fake turn:", error.message);
-// }
+// Invalid Map: Fake turn
+const invalidMap7 = [
+    "  @-A-+-B-x"
+];
+
+processMap(invalidMap7);
