@@ -2,7 +2,7 @@ const directions = {
     up: [-1, 0],
     down: [1, 0],
     left: [0, -1],
-    right: [0, 1]
+    right: [0, 1],
 };
 
 function isValidChar(c) {
@@ -28,24 +28,43 @@ function isValidPosition(map, r, c) {
 
 function findNextDirection(map, pos, prevDirection) {
     const [r, c] = pos;
-    const possibleDirections = Object.keys(directions);
-    const oppositeDirection = getOppositeDirection(prevDirection);
-
-    // Randomize the order of possible directions
-    const shuffledDirections = possibleDirections.sort(() => Math.random() - 0.5);
-
-    for (const direction of shuffledDirections) {
-        if (direction !== oppositeDirection) {
+    if (map[r][c] === '+') {
+        // If at a junction ('+'), consider all directions except the opposite one
+        const possibleDirections = Object.keys(directions).filter(d => d !== getOppositeDirection(prevDirection));
+        for (const direction of possibleDirections) {
             const [dr, dc] = getDirectionVector(direction);
-            const newRow = r + dr;
-            const newCol = c + dc;
-            if (isValidPosition(map, newRow, newCol) && map[newRow][newCol] !== ' ') {
-                return [newRow, newCol, direction];
+            if (isValidPosition(map, r + dr, c + dc) && map[r + dr][c + dc] !== ' ' && direction !== prevDirection) {
+                return [r + dr, c + dc, direction];
             }
+        }
+    } else {
+        // Prioritize continuing in the same direction if possible
+        const [dr, dc] = getDirectionVector(prevDirection);
+        if (isValidPosition(map, r + dr, c + dc) && map[r + dr][c + dc] !== ' ') {
+            return [r + dr, c + dc, prevDirection];
+        }
+    }
+
+    // If stuck and can't move forward or it's not a junction, try any valid direction
+    const fallbackDirections = Object.keys(directions).filter(d => d !== prevDirection && d !== getOppositeDirection(prevDirection));
+    for (const direction of fallbackDirections) {
+        const [dr, dc] = getDirectionVector(direction);
+        if (isValidPosition(map, r + dr, c + dc) && map[r + dr][c + dc] !== ' ') {
+            return [r + dr, c + dc, direction];
         }
     }
 
     throw new Error("Stuck at position with no valid moves.");
+}
+
+function getOppositeDirection(direction) {
+    const opposites = {
+        up: 'down',
+        down: 'up',
+        left: 'right',
+        right: 'left',
+    };
+    return opposites[direction];
 }
 
 function navigateMap(mapArray) {
@@ -53,28 +72,34 @@ function navigateMap(mapArray) {
     let [row, col] = findStartPosition(map);
     let path = '@';
     let letters = '';
-
     let direction = 'right';
     let lastLetterPos = null;
 
-    while (map[row][col] !== 'x') {
+    while (true) {
         const cell = map[row][col];
-        if (/[A-Z]/.test(cell) && `${row},${col}` !== lastLetterPos) {
-            letters += cell;
-            lastLetterPos = `${row},${col}`;
+
+        if (cell === 'x') break;
+
+        if (/[A-Z]/.test(cell)) {
+            if (lastLetterPos !== `${row},${col}`) {
+                letters += cell;
+                lastLetterPos = `${row},${col}`;
+            }
         }
+
         let [newR, newC, newDirection] = findNextDirection(map, [row, col], direction);
         direction = newDirection;
-        path += map[newR][newC];
-        [row, col] = [newR, newC];
+
+        // Append to path if it's a letter or 'x', but not if it's the starting '@'
+        if (cell !== '@') {
+            path += cell;
+        }
+
+        row = newR;
+        col = newC;
     }
 
-    return { letters, path };
-}
-
-function getOppositeDirection(direction) {
-    const opposites = { up: 'down', down: 'up', left: 'right', right: 'left' };
-    return opposites[direction];
+    return { letters, path: path + 'x' };
 }
 
 function processMap(map) {
@@ -88,9 +113,7 @@ function processMap(map) {
 
 
 //Console logs for code testing
-
 // Valid Maps Processing
-
 // Map 1: A basic example
 const map1 = [
     "  @---A---+",
@@ -99,14 +122,12 @@ const map1 = [
     "      |   |",
     "      +---+"
 ];
-
 try {
     const result = navigateMap(map1);
     console.log(`Letters: ${result.letters}, Path: ${result.path}`);
 } catch (error) {
     console.error(`Error: ${error.message}`);
 }
-
 // Map 2: Go straight through intersections
 const map2 = [
     "  @          ",
@@ -117,14 +138,12 @@ const map2 = [
     "    |      | ",
     "    +---D--+ "
 ];
-
 try {
     const result = navigateMap(map2);
     console.log(`Letters: ${result.letters}, Path: ${result.path}`);
 } catch (error) {
     console.error(`Error: ${error.message}`);
 }
-
 // Map 3: Letters may be found on turns
 const map3 = [
     "  @---A---+",
@@ -133,14 +152,12 @@ const map3 = [
     "      |   |",
     "      +---C"
 ];
-
 try {
     const result = navigateMap(map3);
     console.log(`Letters: ${result.letters}, Path: ${result.path}`);
 } catch (error) {
     console.error(`Error: ${error.message}`);
 }
-
 // Map 4: Do not collect a letter from the same location twice
 const map4 = [
     "     +-O-N-+",
@@ -152,14 +169,12 @@ const map4 = [
     "             |",
     "             x"
 ];
-
 try {
     const result = navigateMap(map4);
     console.log(`Letters: ${result.letters}, Path: ${result.path}`);
 } catch (error) {
     console.error(`Error: ${error.message}`);
 }
-
 // Map 5: Keep direction, even in a compact space
 const map5 = [
     " +-L-+",
@@ -167,21 +182,18 @@ const map5 = [
     "@B+ ++ H",
     " ++    x"
 ];
-
 try {
     const result = navigateMap(map5);
     console.log(`Letters: ${result.letters}, Path: ${result.path}`);
 } catch (error) {
     console.error(`Error: ${error.message}`);
 }
-
 // Map 6: Ignore stuff after end of path
 const map6 = [
     "  @-A--+", 
     "       |",
     "       +-B--x-C--D"
 ];
-
 try {
     const result = navigateMap(map6);
     console.log(`Letters: ${result.letters}, Path: ${result.path}`);
