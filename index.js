@@ -28,22 +28,24 @@ function isValidPosition(map, r, c) {
 
 function findNextDirection(map, pos, prevDirection) {
     const [r, c] = pos;
-    let possibleDirections = Object.entries(directions).sort(([dir1], [dir2]) => {
-        if (dir1 === prevDirection) return -1;
-        if (dir2 === prevDirection) return 1;
-        return 0;
-    });
+    const possibleDirections = Object.keys(directions);
+    const oppositeDirection = getOppositeDirection(prevDirection);
 
-    for (let [direction, [dr, dc]] of possibleDirections) {
-        const newRow = r + dr, newCol = c + dc;
-        if (isValidPosition(map, newRow, newCol) && direction !== getOppositeDirection(prevDirection)) {
-            if (map[newRow][newCol] !== ' ') {
+    // Randomize the order of possible directions
+    const shuffledDirections = possibleDirections.sort(() => Math.random() - 0.5);
+
+    for (const direction of shuffledDirections) {
+        if (direction !== oppositeDirection) {
+            const [dr, dc] = getDirectionVector(direction);
+            const newRow = r + dr;
+            const newCol = c + dc;
+            if (isValidPosition(map, newRow, newCol) && map[newRow][newCol] !== ' ') {
                 return [newRow, newCol, direction];
             }
         }
     }
 
-    throw new Error("No valid next direction found.");
+    throw new Error("Stuck at position with no valid moves.");
 }
 
 function navigateMap(mapArray) {
@@ -51,38 +53,28 @@ function navigateMap(mapArray) {
     let [row, col] = findStartPosition(map);
     let path = '@';
     let letters = '';
+
     let direction = 'right';
     let lastLetterPos = null;
 
     while (map[row][col] !== 'x') {
         const cell = map[row][col];
-
-        if (/[A-Z]/.test(cell)) {
-            if (lastLetterPos !== `${row},${col}`) {
-                letters += cell;
-                lastLetterPos = `${row},${col}`;
-            }
+        if (/[A-Z]/.test(cell) && `${row},${col}` !== lastLetterPos) {
+            letters += cell;
+            lastLetterPos = `${row},${col}`;
         }
-
         let [newR, newC, newDirection] = findNextDirection(map, [row, col], direction);
         direction = newDirection;
-
         path += map[newR][newC];
-        row = newR;
-        col = newC;
+        [row, col] = [newR, newC];
     }
 
     return { letters, path };
 }
 
 function getOppositeDirection(direction) {
-    switch (direction) {
-        case 'up': return 'down';
-        case 'down': return 'up';
-        case 'left': return 'right';
-        case 'right': return 'left';
-        default: return '';
-    }
+    const opposites = { up: 'down', down: 'up', left: 'right', right: 'left' };
+    return opposites[direction];
 }
 
 function processMap(map) {
